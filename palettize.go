@@ -21,7 +21,7 @@ import (
 
 func main() {
 	if len(os.Args) != 4 {
-		panic("Command format: palettize <image file> <pallete file> <output file>")
+		panic("Command format: palettize <value file> <palette file> <output file>")
 	}
 	imgOriginal := readImage(os.Args[1])
 	imgPalette := readImage(os.Args[2])
