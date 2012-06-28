@@ -17,6 +17,7 @@ import (
 	"image"
 	"image/png"
 	"image/color"
+	"fmt"
 )
 
 func main() {
@@ -79,8 +80,10 @@ func indexOf(c color.Color, colors []color.Color) int {
 func sort(unsorted []color.Color) []color.Color {
 	sorted := make([]color.Color, 0)
 	for _, col := range unsorted {
+		added := false
 		for i, color2 := range sorted {
 			if col == color2 {
+				added = true
 				break
 			} else if brightness(col) > brightness(color2) {
 				oldSorted := sorted
@@ -94,15 +97,17 @@ func sort(unsorted []color.Color) []color.Color {
 						sorted[j] = oldSorted[j - 1]
 					}
 				}
+				added = true
 				break
 			}
 		}
 
-		if len(sorted) == 0 {
+		if !added {
 			sorted = append(sorted, col)
 		}
 	}
 
+	fmt.Println(sorted)
 	return sorted
 }
 
