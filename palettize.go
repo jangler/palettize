@@ -17,7 +17,6 @@ import (
 	"image"
 	"image/png"
 	"image/color"
-	"fmt"
 )
 
 func main() {
@@ -107,7 +106,6 @@ func sort(unsorted []color.Color) []color.Color {
 		}
 	}
 
-	fmt.Println(sorted)
 	return sorted
 }
 
