@@ -13,7 +13,8 @@ to produce the result image.
 package main
 
 import (
-    "fmt"
+	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
@@ -21,11 +22,16 @@ import (
 	"sort"
 )
 
+// Prints an error message to stderr and exits with a non-zero status.
+func die(err error) {
+	fmt.Fprintf(os.Stderr, err.Error()+"\n")
+	os.Exit(1)
+}
+
 func main() {
 	if len(os.Args) != 4 {
-		fmt.Fprintf(os.Stderr, "Usage: %s original palette result\n",
-                    os.Args[0])
-        return
+		die(errors.New(fmt.Sprintf("Usage: %s original palette result",
+			os.Args[0])))
 	}
 
 	valueImg := readImage(os.Args[1])
@@ -37,14 +43,14 @@ func main() {
 
 	b := valueImg.Bounds()
 	imgOut := image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
-    width := b.Max.X - b.Min.X
+	width := b.Max.X - b.Min.X
 	for x := b.Min.X; x < b.Max.X; x++ {
 
-        // Progress display
-        colNumber := x - b.Min.X + 1
-        fmt.Printf("\rConverting column %d of %d (%d%%)", colNumber, width,
-                   100 * colNumber / width)
-        os.Stdout.Sync()
+		// Progress display
+		colNumber := x - b.Min.X + 1
+		fmt.Printf("\rConverting column %d of %d (%d%%)", colNumber, width,
+			100*colNumber/width)
+		os.Stdout.Sync()
 
 		for y := b.Min.Y; y < b.Max.Y; y++ {
 			index := indexOf(valueImg.At(x, y), oldPalette)
@@ -56,9 +62,9 @@ func main() {
 		}
 	}
 
-    // Erase progress display
-    print("\r")
-    os.Stdout.Sync()
+	// Erase progress display
+	print("\r")
+	os.Stdout.Sync()
 
 	writeImage(imgOut, os.Args[3])
 }
@@ -114,14 +120,23 @@ func brightness(c color.Color) uint32 {
 
 // Gets an image from a PNG file.
 func readImage(filename string) image.Image {
-	file, _ := os.Open(filename)
-	image, _ := png.Decode(file)
+	file, err := os.Open(filename)
+	if err != nil {
+		die(err)
+	}
+	image, err := png.Decode(file)
+	if err != nil {
+		die(err)
+	}
 	return image
 }
 
 // Writes an image to a PNG file.
 func writeImage(img image.Image, filename string) {
-	file, _ := os.Create(filename)
+	file, err := os.Create(filename)
+	if err != nil {
+		die(err)
+	}
 	png.Encode(file, img)
 }
 
