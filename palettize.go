@@ -71,16 +71,26 @@ func main() {
 
 // Gets a slice of colors from an image, sorted from least to most brightness.
 func getPalette(img image.Image) []color.Color {
-	palette := make([]color.Color, 0)
+
+	// Get colors from image
+	allColors := make([]color.Color, 0)
 	b := img.Bounds()
 	for x := b.Min.X; x < b.Max.X; x++ {
 		for y := b.Min.Y; y < b.Max.Y; y++ {
 			if !transparent(img.At(x, y)) {
-				palette = append(palette, img.At(x, y))
+				allColors = append(allColors, img.At(x, y))
 			}
 		}
 	}
-	sort.Sort(ByBrightness(palette))
+
+	// Convert slice of colors into sorted set of (unique) colors
+	sort.Sort(ByBrightness(allColors))
+	palette := make([]color.Color, 0)
+	for _, c := range allColors {
+		if len(palette) == 0 || palette[len(palette)-1] != c {
+			palette = append(palette, c)
+		}
+	}
 
 	return palette
 }
