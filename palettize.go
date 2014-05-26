@@ -3,7 +3,7 @@ Palettize creates a composite image using the brightness of one image and the
 color palette of another. Only works with PNGs.
 
 Example syntax:
-    ./palettizer brightness.png palette.png result.png
+    ./palettizer original.png palette.png result.png
 
 The alogorithm used gets a list of the colors from each input file and sorts
 them by brightness. The color of each pixel in the first image is mapped onto
@@ -13,6 +13,7 @@ to produce the result image.
 package main
 
 import (
+    "fmt"
 	"image"
 	"image/color"
 	"image/png"
@@ -22,8 +23,9 @@ import (
 
 func main() {
 	if len(os.Args) != 4 {
-		panic("Command format: palettize <value file> <palette file> " +
-			"<output file>")
+		fmt.Fprintf(os.Stderr, "Usage: %s original palette result\n",
+                    os.Args[0])
+        return
 	}
 	valueImg := readImage(os.Args[1])
 
