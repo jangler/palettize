@@ -28,6 +28,83 @@ func die(err error) {
 	os.Exit(1)
 }
 
+// Gets an image from a PNG file.
+func readImage(filename string) image.Image {
+	file, err := os.Open(filename)
+	if err != nil {
+		die(err)
+	}
+	image, err := png.Decode(file)
+	if err != nil {
+		die(err)
+	}
+	return image
+}
+
+// Returns true if the color is transparent, false if it is opaque.
+func transparent(c color.Color) bool {
+	_, _, _, a := c.RGBA()
+	return a == 0
+}
+
+// ByBrightness implements sort.Interface for []color.Color based on value
+// (brightness).
+type ByBrightness []color.Color
+
+func (a ByBrightness) Len() int      { return len(a) }
+func (a ByBrightness) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByBrightness) Less(i, j int) bool {
+	ri, gi, bi, _ := a[i].RGBA()
+	rj, gj, bj, _ := a[j].RGBA()
+	return (ri + gi + bi) < (rj + gj + bj)
+}
+
+// Gets a slice of colors from an image, sorted from least to most brightness.
+func getPalette(img image.Image) []color.Color {
+
+	// Get colors from image
+	allColors := make([]color.Color, 0)
+	b := img.Bounds()
+	for x := b.Min.X; x < b.Max.X; x++ {
+		for y := b.Min.Y; y < b.Max.Y; y++ {
+			if !transparent(img.At(x, y)) {
+				allColors = append(allColors, img.At(x, y))
+			}
+		}
+	}
+
+	// Convert slice of colors into sorted set of (unique) colors
+	sort.Sort(ByBrightness(allColors))
+	palette := make([]color.Color, 0)
+	for _, c := range allColors {
+		if len(palette) == 0 || palette[len(palette)-1] != c {
+			palette = append(palette, c)
+		}
+	}
+
+	return palette
+}
+
+// Gets the index of a color in a slice of colors, or -1 if not found.
+func indexOf(c color.Color, colors []color.Color) int {
+	for i := 0; i < len(colors); i++ {
+		if colors[i] == c {
+			return i
+		}
+	}
+
+	return -1
+}
+
+// Writes an image to a PNG file.
+func writeImage(img image.Image, filename string) {
+	file, err := os.Create(filename)
+	if err != nil {
+		die(err)
+	}
+	png.Encode(file, img)
+}
+
 func main() {
 	if len(os.Args) != 4 {
 		die(errors.New(fmt.Sprintf("Usage: %s original palette result",
@@ -67,83 +144,6 @@ func main() {
 	os.Stdout.Sync()
 
 	writeImage(imgOut, os.Args[3])
-}
-
-// Gets a slice of colors from an image, sorted from least to most brightness.
-func getPalette(img image.Image) []color.Color {
-
-	// Get colors from image
-	allColors := make([]color.Color, 0)
-	b := img.Bounds()
-	for x := b.Min.X; x < b.Max.X; x++ {
-		for y := b.Min.Y; y < b.Max.Y; y++ {
-			if !transparent(img.At(x, y)) {
-				allColors = append(allColors, img.At(x, y))
-			}
-		}
-	}
-
-	// Convert slice of colors into sorted set of (unique) colors
-	sort.Sort(ByBrightness(allColors))
-	palette := make([]color.Color, 0)
-	for _, c := range allColors {
-		if len(palette) == 0 || palette[len(palette)-1] != c {
-			palette = append(palette, c)
-		}
-	}
-
-	return palette
-}
-
-// Gets the index of a color in a slice of colors.
-func indexOf(c color.Color, colors []color.Color) int {
-	for i := 0; i < len(colors); i++ {
-		if colors[i] == c {
-			return i
-		}
-	}
-
-	return -1
-}
-
-// ByBrightness implements sort.Interface for []color.Color based on value
-// (brightness).
-type ByBrightness []color.Color
-
-func (a ByBrightness) Len() int      { return len(a) }
-func (a ByBrightness) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a ByBrightness) Less(i, j int) bool {
-	ri, gi, bi, _ := a[i].RGBA()
-	rj, gj, bj, _ := a[j].RGBA()
-	return (ri + gi + bi) < (rj + gj + bj)
-}
-
-// Returns true if the color is transparent, false if it is opaque.
-func transparent(c color.Color) bool {
-	_, _, _, a := c.RGBA()
-	return a == 0
-}
-
-// Gets an image from a PNG file.
-func readImage(filename string) image.Image {
-	file, err := os.Open(filename)
-	if err != nil {
-		die(err)
-	}
-	image, err := png.Decode(file)
-	if err != nil {
-		die(err)
-	}
-	return image
-}
-
-// Writes an image to a PNG file.
-func writeImage(img image.Image, filename string) {
-	file, err := os.Create(filename)
-	if err != nil {
-		die(err)
-	}
-	png.Encode(file, img)
 }
 
 // vim: ts=4 sw=0
