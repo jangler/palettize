@@ -113,19 +113,15 @@ type ByBrightness []color.Color
 func (a ByBrightness) Len() int      { return len(a) }
 func (a ByBrightness) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ByBrightness) Less(i, j int) bool {
-	return brightness(a[i]) < brightness(a[j])
+	ri, gi, bi, _ := a[i].RGBA()
+	rj, gj, bj, _ := a[j].RGBA()
+	return (ri + gi + bi) < (rj + gj + bj)
 }
 
 // Returns true if the color is transparent, false if it is opaque.
 func transparent(c color.Color) bool {
 	_, _, _, a := c.RGBA()
 	return a == 0
-}
-
-// Gets the brightness of a color (the sum of its red, green, and blue values).
-func brightness(c color.Color) uint32 {
-	r, g, b, _ := c.RGBA()
-	return r + g + b
 }
 
 // Gets an image from a PNG file.
