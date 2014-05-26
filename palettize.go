@@ -3,7 +3,7 @@ Palettize creates a composite image using the brightness of one image and the
 color palette of another. Only works with PNGs.
 
 Example syntax:
-    ./palettizer original.png palette.png result.png
+    ./palettize original.png palette.png result.png
 
 The alogorithm used gets a list of the colors from each input file and sorts
 them by brightness. The color of each pixel in the first image is mapped onto
@@ -27,6 +27,7 @@ func main() {
                     os.Args[0])
         return
 	}
+
 	valueImg := readImage(os.Args[1])
 
 	oldPalette := getPalette(valueImg)
@@ -36,18 +37,28 @@ func main() {
 
 	b := valueImg.Bounds()
 	imgOut := image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
+    width := b.Max.X - b.Min.X
 	for x := b.Min.X; x < b.Max.X; x++ {
-        println(x)
+
+        // Progress display
+        colNumber := x - b.Min.X + 1
+        fmt.Printf("\rConverting column %d of %d (%d%%)", colNumber, width,
+                   100 * colNumber / width)
+        os.Stdout.Sync()
+
 		for y := b.Min.Y; y < b.Max.Y; y++ {
 			index := indexOf(valueImg.At(x, y), oldPalette)
-			if index == -1 {
-				imgOut.Set(x, y, valueImg.At(x, y))
-			} else {
+			if index != -1 {
 				imgOut.Set(x, y, newPalette[int(float64(index)*ratio)])
+			} else {
+				imgOut.Set(x, y, valueImg.At(x, y))
 			}
 		}
 	}
-    println("done")
+
+    // Erase progress display
+    print("\r")
+    os.Stdout.Sync()
 
 	writeImage(imgOut, os.Args[3])
 }
