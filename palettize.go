@@ -1,6 +1,6 @@
 /*
 Palettize creates a composite image using the brightness of one image and the
-color palette of another. Only works with PNGs.
+color palette of another. Supports GIF, JPEG, and PNG files.
 
 Example syntax:
     ./palettize original.png palette.png result.png
@@ -17,9 +17,13 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"image/gif"
+	"image/jpeg"
 	"image/png"
 	"os"
+	"path/filepath"
 	"sort"
+	"strings"
 )
 
 // Prints an error message to stderr and exits with a non-zero status.
@@ -28,16 +32,28 @@ func die(err error) {
 	os.Exit(1)
 }
 
-// Gets an image from a PNG file.
+// Gets an image from a GIF, JPEG, or PNG file.
 func readImage(filename string) image.Image {
 	file, err := os.Open(filename)
 	if err != nil {
 		die(err)
 	}
+	defer file.Close()
+
+	// Attempt to decode the file in different formats
 	image, err := png.Decode(file)
 	if err != nil {
-		die(err)
+        file.Seek(0, 0)
+		image, err = gif.Decode(file)
+		if err != nil {
+            file.Seek(0, 0)
+			image, err = jpeg.Decode(file)
+            if err != nil {
+                die(errors.New("unsupported file type: " + filename))
+            }
+		}
 	}
+
 	return image
 }
 
@@ -96,13 +112,29 @@ func indexOf(c color.Color, colors []color.Color) int {
 	return -1
 }
 
-// Writes an image to a PNG file.
+// Returns true if filename has extension ext, false otherwise.
+func extMatch(filename, ext string) bool {
+	return strings.ToLower(filepath.Ext(filename)) == strings.ToLower(ext)
+}
+
+// Writes an image to a GIF, JPEG, or PNG file.
 func writeImage(img image.Image, filename string) {
 	file, err := os.Create(filename)
 	if err != nil {
 		die(err)
 	}
-	png.Encode(file, img)
+	defer file.Close()
+
+	// Write file based on given extension
+	if extMatch(filename, ".gif") {
+		gif.Encode(file, img, &gif.Options{256, nil, nil})
+	} else if extMatch(filename, ".jpg") || extMatch(filename, ".jpeg") {
+		jpeg.Encode(file, img, &jpeg.Options{100})
+	} else if extMatch(filename, ".png") {
+		png.Encode(file, img)
+	} else {
+		die(errors.New("unknown file extension: " + filepath.Ext(filename)))
+	}
 }
 
 func main() {
@@ -140,7 +172,7 @@ func main() {
 	}
 
 	// Erase progress display
-	print("\r")
+	print("\r                                     \r")
 	os.Stdout.Sync()
 
 	writeImage(imgOut, os.Args[3])
