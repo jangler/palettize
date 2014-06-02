@@ -4,6 +4,11 @@ palettize
 a program that produces a composite image from one image's values and another
 image's colors. supports gif, jpeg, and png formats.
 
+installation
+------------
+
+    go get -u github.com/jangler/palettize
+
 example
 -------
 
