@@ -28,7 +28,7 @@ import (
 
 // Prints an error message to stderr and exits with a non-zero status.
 func die(err error) {
-	fmt.Fprintf(os.Stderr, err.Error()+"\n")
+	fmt.Fprintln(os.Stderr, err)
 	os.Exit(1)
 }
 
@@ -41,20 +41,19 @@ func readImage(filename string) image.Image {
 	defer file.Close()
 
 	// Attempt to decode the file in different formats
-	image, err := png.Decode(file)
-	if err != nil {
-        file.Seek(0, 0)
-		image, err = gif.Decode(file)
-		if err != nil {
-            file.Seek(0, 0)
-			image, err = jpeg.Decode(file)
-            if err != nil {
-                die(errors.New("unsupported file type: " + filename))
-            }
-		}
+	if image, err := png.Decode(file); err == nil {
+		return image
 	}
-
-	return image
+	file.Seek(0, 0)
+	if image, err := gif.Decode(file); err == nil {
+		return image
+	}
+	file.Seek(0, 0)
+	if image, err := jpeg.Decode(file); err == nil {
+		return image
+	}
+	die(errors.New("unsupported file type: " + filename))
+	return nil // unreachable
 }
 
 // Returns true if the color is transparent, false if it is opaque.
@@ -101,15 +100,15 @@ func getPalette(img image.Image) []color.Color {
 	return palette
 }
 
-// Gets the index of a color in a slice of colors, or -1 if not found.
-func indexOf(c color.Color, colors []color.Color) int {
+// Gets the index of a color in a slice of colors.
+func indexOf(c color.Color, colors []color.Color) (int, error) {
 	for i := 0; i < len(colors); i++ {
 		if colors[i] == c {
-			return i
+			return i, nil
 		}
 	}
 
-	return -1
+	return 0, errors.New("color not in slice")
 }
 
 // Returns true if filename has extension ext, false otherwise.
@@ -162,8 +161,7 @@ func main() {
 		os.Stdout.Sync()
 
 		for y := b.Min.Y; y < b.Max.Y; y++ {
-			index := indexOf(valueImg.At(x, y), oldPalette)
-			if index != -1 {
+			if index, err := indexOf(valueImg.At(x, y), oldPalette); err == nil {
 				imgOut.Set(x, y, newPalette[int(float64(index)*ratio)])
 			} else {
 				imgOut.Set(x, y, valueImg.At(x, y))
